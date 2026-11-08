@@ -1,0 +1,2 @@
+cryptography>=42.0   # Kütüphaneli AES, RSA, DH, ECDH
+PyQt6>=6.6           # İstemci arayüzü
