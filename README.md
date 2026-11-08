@@ -37,14 +37,14 @@ Bilgi Güvenliği ve Kriptoloji dersi (Dr. Hakan AYDIN) — KTÜ Of Teknoloji Fa
 ## 2. Görev Dağılımı
 
 ### Himmet Demir (457261) — Sunucu, Protokol, Entegrasyon
-- [ ] Proje iskeleti, klasör yapısı, ortak sınıf arayüzleri (OOP), `requirements.txt`
-- [ ] Haberleşme protokolü: mesaj çerçeveleme (uzunluk + başlık + veri), mesaj tipleri (`HELLO`, `KEY_EXCHANGE`, `TEXT`, `FILE_CHUNK`, `FILE_END`, `ACK`)
-- [ ] Sunucu: iki istemciyi kabul etme, istemci başına ayrı AES anahtarı tutma, mesajı çözüp ekrana yazma / dosyayı kaydetme, diğer istemcinin anahtarıyla yeniden şifreleyip iletme
-- [ ] İstemci ağ katmanı (bağlanma, gönderme, alma) — GUI'den bağımsız bir sınıf
-- [ ] PDF dosyasını parçalara bölme ve karşı tarafta birleştirme
-- [ ] Güvensiz / güvenli mod geçişi
+- [x] Proje iskeleti, klasör yapısı, ortak sınıf arayüzleri (OOP), `requirements.txt`
+- [x] Haberleşme protokolü: mesaj çerçeveleme (uzunluk + başlık + veri), mesaj tipleri (`HELLO`, `KX_SERVER`, `KX_CLIENT`, `KX_DONE`, `WELCOME`, `TEXT`, `FILE_START`, `FILE_CHUNK`, `FILE_END`, `ACK`, `INFO`, `ERROR`, `BYE`)
+- [x] Sunucu: iki istemciyi kabul etme, istemci başına ayrı AES anahtarı tutma, mesajı çözüp ekrana yazma / dosyayı kaydetme, diğer istemcinin anahtarıyla yeniden şifreleyip iletme
+- [x] İstemci ağ katmanı (bağlanma, gönderme, alma) — GUI'den bağımsız bir sınıf (+ test için komut satırı istemcisi)
+- [x] PDF dosyasını parçalara bölme ve karşı tarafta birleştirme
+- [x] Güvensiz / güvenli mod geçişi
 - [ ] Modüllerin birleştirilmesi (AES + anahtar dağıtım + GUI), iki bilgisayarda uçtan uca test
-- [ ] README'nin kurulum ve çalıştırma bölümü
+- [x] README'nin kurulum ve çalıştırma bölümü
 - **Rapor:** Kapak, 1. Giriş, 2. Sistem Mimarisi, 3. Güvenli Mod Akışı, 9. Görev Dağılımı, raporun birleştirilmesi
 
 ### Yunus Özkan (445873) — Kütüphanesiz AES-128, İstemci Arayüzü
@@ -81,9 +81,9 @@ Slaytlara göre klasik yöntemler de kodlanıp repoya eklenecek. Öneri dağıl�
 
 | Himmet Demir         | Yunus Özkan        | Gürkan Kaya            |
 |----------------------|--------------------|------------------------|
-| Caesar               | Vigenère           | Affine                 |
-| Substitution         | Hill               | Rail Fence             |
-| Playfair             | Polybius           | Columnar Transposition |
+| Caesar ✅            | Vigenère           | Affine                 |
+| Substitution ✅      | Hill               | Rail Fence             |
+| Playfair ✅          | Polybius           | Columnar Transposition |
 
 ---
 
@@ -94,7 +94,8 @@ criptology/
 ├── server/            # Sunucu ve yönlendirme mantığı
 ├── client/
 │   ├── network/       # İstemci ağ katmanı (GUI'den bağımsız)
-│   └── gui/           # Arayüz bileşenleri
+│   ├── gui/           # Arayüz bileşenleri
+│   └── cli.py         # Komut satırı istemcisi (test ve Wireshark çekimi için)
 ├── common/            # Protokol, mesaj tipleri, ayarlar
 ├── crypto/
 │   ├── aes_manual/    # Kütüphanesiz AES-128
@@ -111,7 +112,7 @@ criptology/
 ## 4. Güvenli Mod Akışı (Özet)
 
 1. İstemci sunucuya bağlanır, mod ve anahtar dağıtım yöntemini bildirir (`HELLO`).
-2. Seçilen yöntemle (RSA / DH / ECDH / Kyber) AES-128 anahtarı paylaşılır (`KEY_EXCHANGE`).
+2. Seçilen yöntemle (RSA / DH / ECDH / Kyber) AES-128 anahtarı paylaşılır: sunucu ilk mesajı gönderir (`KX_SERVER`), istemci cevaplar (`KX_CLIENT`), sunucu süre ve byte ölçümlerini bildirir (`KX_DONE`), ardından bağlantı hazırdır (`WELCOME`).
 3. İstemci metni veya PDF parçalarını AES ile şifreleyip gönderir (`TEXT` / `FILE_CHUNK` / `FILE_END`).
 4. Sunucu gönderenin anahtarıyla çözer, ekrana yazar veya dosyayı kaydeder.
 5. Sunucu veriyi alıcının anahtarıyla yeniden şifreleyip diğer istemciye iletir.
@@ -139,4 +140,59 @@ criptology/
 
 ## 8. Kurulum ve Çalıştırma
 
-> Platform ve dil kesinleşince doldurulacak: gereksinimler, kurulum komutları, **hangi bilgisayarda hangi programın çalıştırılacağı**, IP/port ayarları ve güvenlik duvarı notları.
+### Gereksinimler
+- Python 3.10 veya üzeri
+- Bağımlılıklar:
+
+```bash
+pip install -r requirements.txt
+```
+
+### Hangi bilgisayarda ne çalışır?
+
+| Bilgisayar     | Program                    | Komut                                   |
+|----------------|----------------------------|-----------------------------------------|
+| Bilgisayar 1   | Sunucu                     | `python -m server`                      |
+| Bilgisayar 2   | İstemci 1                  | `python -m client.cli --host <sunucu IP> --name Ali` |
+| Bilgisayar 2/3 | İstemci 2                  | `python -m client.cli --host <sunucu IP> --name Veli` |
+
+Komutlar reponun kök klasöründe çalıştırılır. Sunucu açılınca istemcilerin bağlanacağı IP adreslerini ekrana yazar. PyQt arayüzü hazır olunca komut satırı istemcisinin yerini alacak.
+
+### Sunucu
+
+```bash
+python -m server --port 5000 --aes lib
+```
+
+- `--aes lib|manual`: güvenli modda kütüphaneli veya kütüphanesiz AES kullanılır (iki taraf da aynısını seçmeli).
+- Gelen dosyalar `server_received/<istemci adı>/` altına kaydedilir.
+
+### İstemci (komut satırı)
+
+```bash
+python -m client.cli --host 192.168.1.10 --name Ali --mode insecure
+python -m client.cli --host 192.168.1.10 --name Ali --mode secure --method rsa
+```
+
+- `--mode insecure|secure`, `--method rsa|dh|ecdh|kyber` (güvenli mod için).
+- Yazılan her satır metin olarak gider. `/dosya C:/Belgeler/rapor.pdf` dosya gönderir, `/cik` çıkar.
+apor.pdf` dosya gönderir, `/cik` çıkar.
+- Gelen dosyalar `received/` klasörüne kaydedilir.
+
+### Güvenlik Duvarı (Windows)
+Sunucu bilgisayarında 5000 numaralı TCP portuna gelen bağlantılara izin verilmelidir. İlk çalıştırmada Windows'un sorduğu pencerede **Özel ağ** seçeneğine izin verin ya da yönetici olarak açılan bir terminalde:
+
+```bash
+netsh advfirewall firewall add rule name="Kriptoloji Sunucu" dir=in action=allow protocol=TCP localport=5000
+```
+
+### Testler
+
+```bash
+python -m unittest -v
+```
+
+Sunucu ve iki istemciyi aynı bilgisayarda başlatıp güvensiz, güvenli ve karma modda metin ve dosya aktarımını, ACK akışını, dolu sunucuyu ve hatalı yöntem seçimini test eder. Gerçek anahtar dağıtım yöntemleri eklenene kadar güvenli mod testleri yalnızca test amaçlı bir yöntem (`test-plain`) kullanır.
+
+### Wireshark
+Filtre: `tcp.port == 5000`. Güvensiz modda metin ve PDF içeriği paketlerde açıkça görünür; güvenli modda veri kısmı AES ile şifreli olduğu için okunamaz.
