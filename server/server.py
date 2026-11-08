@@ -132,6 +132,13 @@ class Server:
                 self._sessions.append(session)
         if full:
             self.log(f"{address[0]} reddedildi: sunucu dolu")
+            # Önce istemcinin HELLO'su okunur: okunmamış veri varken soket kapatılırsa
+            # (özellikle Windows'ta) bağlantı sıfırlanır ve istemci hata mesajını göremez.
+            try:
+                conn.settimeout(config.HANDSHAKE_TIMEOUT)
+                conn.recv()
+            except (ConnectionClosed, ProtocolError, OSError):
+                pass
             self._send_quietly(conn, Message(MessageType.ERROR, {"message": "Sunucu dolu (en fazla 2 istemci)"}))
             conn.close()
             return
